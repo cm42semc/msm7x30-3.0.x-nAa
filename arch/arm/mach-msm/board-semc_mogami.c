@@ -5323,55 +5323,45 @@ static int bluetooth_power(int on)
 	return 0;
 }
 
-static struct wake_lock st_wk_lock;
+static struct wake_lock wilink_wk_lock;
 
-static int plat_chip_enable(struct kim_data_s *data)
+static int wilink_enable(struct kim_data_s *data)
 {
-	pr_info("%s\n", __func__);
 	bluetooth_power(1);
-	wake_lock(&st_wk_lock);
-	pr_info("%s: done\n", __func__);
-	return 1;
-}
-
-static int plat_chip_disable(struct kim_data_s *data)
-{
+	wake_lock(&wilink_wk_lock);
 	pr_info("%s\n", __func__);
-	bluetooth_power(0);
-	wake_unlock(&st_wk_lock);
-	pr_info("%s: done\n", __func__);
-	return 1;
-}
-
-static unsigned long retry_suspend;
-
-int plat_kim_suspend(struct platform_device *pdev, pm_message_t state)
-{
-	struct kim_data_s *kim_gdata;
-	struct st_data_s *core_data;
-	pr_info("%s\n", __func__);
-	kim_gdata = dev_get_drvdata(&pdev->dev);
-	core_data = kim_gdata->core_data;
-
-  if (st_ll_getstate(core_data) == ST_LL_INVALID)
-    pr_info("%s: disabled\n", __func__);
-  else {
-    while (st_ll_getstate(core_data) != ST_LL_ASLEEP) {
-      if (++retry_suspend > 10) {
-        pr_err("%s: fail\n", __func__);
-        return -1;
-      }
-      msleep(10);
-		}
-	pr_info("%s: ok\n", __func__);
-	}
 	return 0;
 }
 
-int plat_kim_resume(struct platform_device *pdev)
+static int wilink_disable(struct kim_data_s *data)
+{
+	bluetooth_power(0);
+	wake_unlock(&wilink_wk_lock);
+	pr_info("%s\n", __func__);
+	return 0;
+}
+
+static int wilink_awake(struct kim_data_s *data)
 {
 	pr_info("%s\n", __func__);
-	retry_suspend = 0;
+	return 0;
+}
+
+static int wilink_asleep(struct kim_data_s *data)
+{
+	pr_info("%s\n", __func__);
+	return 0;
+}
+
+int wilink_suspend(struct platform_device *pdev, pm_message_t state)
+{
+	pr_info("%s\n", __func__);
+	return 0;
+}
+
+int wilink_resume(struct platform_device *pdev)
+{
+	pr_info("%s\n", __func__);
 	return 0;
 }
 
@@ -5380,10 +5370,12 @@ static struct ti_st_plat_data wilink_pdata = {
 	.dev_name = WILINK_UART_DEV_NAME,
 	.flow_cntrl = 1,
 	.baud_rate = 3000000,
-	.chip_enable = plat_chip_enable,
-	.chip_disable = plat_chip_disable,
-	.suspend = plat_kim_suspend,
-	.resume = plat_kim_resume,
+	.chip_enable = wilink_enable,
+	.chip_disable = wilink_disable,
+	.chip_awake = wilink_awake,
+	.chip_asleep = wilink_asleep,
+	.suspend = wilink_suspend,
+	.resume = wilink_resume,
 };
 
 static struct platform_device btwilink_device = {
@@ -5400,7 +5392,7 @@ static struct platform_device wl1271_device = {
 
 static noinline void __init mogami_bt_wl1271(void)
 {
-	wake_lock_init(&st_wk_lock, WAKE_LOCK_SUSPEND, "st_wake_lock");
+	wake_lock_init(&wilink_wk_lock, WAKE_LOCK_SUSPEND, "wilink_wk_lock");
 	platform_device_register(&wl1271_device);
 	platform_device_register(&btwilink_device);
 
