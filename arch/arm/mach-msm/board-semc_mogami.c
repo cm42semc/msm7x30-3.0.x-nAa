@@ -5352,15 +5352,19 @@ int plat_kim_suspend(struct platform_device *pdev, pm_message_t state)
 	pr_info("%s\n", __func__);
 	kim_gdata = dev_get_drvdata(&pdev->dev);
 	core_data = kim_gdata->core_data;
-	if (st_ll_getstate(core_data) != ST_LL_INVALID) {
-		/* Prevent suspend until sleep indication from chip */
-		while (st_ll_getstate(core_data) != ST_LL_ASLEEP &&
-			(retry_suspend++ < 5)) {
-			pr_err("%s: fail\n", __func__);
-			return -1;
+
+  if (st_ll_getstate(core_data) == ST_LL_INVALID)
+    pr_info("%s: disabled\n", __func__);
+  else {
+    while (st_ll_getstate(core_data) != ST_LL_ASLEEP) {
+      if (++retry_suspend > 10) {
+        pr_err("%s: fail\n", __func__);
+        return -1;
+      }
+      msleep(10);
 		}
-	}
 	pr_info("%s: ok\n", __func__);
+	}
 	return 0;
 }
 
