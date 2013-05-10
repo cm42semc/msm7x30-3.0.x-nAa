@@ -198,6 +198,7 @@ struct fm_event_msg_hdr {
 /* Band types */
 #define FM_BAND_EUROPE_US	0
 #define FM_BAND_JAPAN		1
+#define FM_BAND_RUSSIAN		2
 
 /* Seek directions */
 #define FM_SEARCH_DIRECTION_DOWN	0
@@ -211,14 +212,11 @@ struct fm_event_msg_hdr {
 
 /* Min and Max volume */
 #define FM_RX_VOLUME_MIN	0
-#define FM_RX_VOLUME_MAX	70
-
-/* Volume gain step */
-#define FM_RX_VOLUME_GAIN_STEP	0x370
+#define FM_RX_VOLUME_MAX	0xffff
 
 /* Mute modes */
-#define	FM_MUTE_ON		0
-#define FM_MUTE_OFF		1
+#define FM_MUTE_OFF		0
+#define	FM_MUTE_ON		1
 #define	FM_MUTE_ATTENUATE	2
 
 #define FM_RX_UNMUTE_MODE		0x00
@@ -233,8 +231,8 @@ struct fm_event_msg_hdr {
 #define FM_RX_RF_DEPENDENT_MUTE_OFF	0
 
 /* RSSI threshold min and max */
-#define FM_RX_RSSI_THRESHOLD_MIN	-128
-#define FM_RX_RSSI_THRESHOLD_MAX	127
+#define FM_RX_RSSI_THRESHOLD_MIN	0	/* 0 dBuV */
+#define FM_RX_RSSI_THRESHOLD_MAX	127	/* 191.1477 dBuV */
 
 /* Stereo/Mono mode */
 #define FM_STEREO_MODE		0
@@ -347,8 +345,8 @@ struct fm_event_msg_hdr {
  * Default RX mode configuration. Chip will be configured
  * with this default values after loading RX firmware.
  */
-#define FM_DEFAULT_RX_VOLUME		10
-#define FM_DEFAULT_RSSI_THRESHOLD	3
+#define FM_DEFAULT_RX_VOLUME		10000
+#define FM_DEFAULT_RSSI_THRESHOLD	8	/* 12.0408 dBuV */
 
 /* Range for TX power level in units for dB/uV */
 #define FM_PWR_LVL_LOW			91
@@ -397,6 +395,13 @@ u32 fmc_get_mode(struct fmdev *, u8 *);
 #define FM_CHANNEL_SPACING_100KHZ 2
 #define FM_CHANNEL_SPACING_200KHZ 4
 #define FM_FREQ_MUL 50
+
+#define FM_US_BAND_LOW		87500
+#define FM_US_BAND_HIGH		180000
+#define FM_JAPAN_BAND_LOW	76000
+#define FM_JAPAN_BAND_HIGH	90000
+
+#define FM_KHZ			100
 
 #endif
 
