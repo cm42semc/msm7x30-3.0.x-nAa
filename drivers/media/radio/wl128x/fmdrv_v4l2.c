@@ -105,6 +105,185 @@ static u32 fm_v4l2_fops_poll(struct file *file, struct poll_table_struct *pts)
 	return 0;
 }
 
+/**********************************************************************/
+/* functions called from sysfs subsystem */
+
+static ssize_t show_fmtx_af(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct fmdev *fmdev = dev_get_drvdata(dev);
+
+	return sprintf(buf, "%d\n", fmdev->tx_data.af_frq);
+}
+
+static ssize_t store_fmtx_af(struct device *dev,
+		struct device_attribute *attr, char *buf, size_t size)
+{
+	int ret;
+	unsigned long af_freq;
+	struct fmdev *fmdev = dev_get_drvdata(dev);
+
+	if (kstrtoul(buf, 0, &af_freq))
+		return -EINVAL;
+
+	ret = fm_tx_set_af(fmdev, af_freq);
+	if (ret < 0) {
+		fmerr("Failed to set FM TX AF Frequency\n");
+		return ret;
+	}
+	return size;
+}
+
+static ssize_t show_fmrx_deemphasis(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct fmdev *fmdev = dev_get_drvdata(dev);
+
+	return sprintf(buf, "%d\n", (fmdev->rx.deemphasis_mode ==
+				FM_RX_EMPHASIS_FILTER_50_USEC) ? 50 : 75);
+}
+
+static ssize_t store_fmrx_deemphasis(struct device *dev,
+		struct device_attribute *attr, char *buf, size_t size)
+{
+	int ret;
+	unsigned long deemph_mode;
+	struct fmdev *fmdev = dev_get_drvdata(dev);
+
+	if (kstrtoul(buf, 0, &deemph_mode))
+		return -EINVAL;
+
+	if (deemph_mode != 50 && deemph_mode != 75)
+		return -EINVAL;
+
+	if (deemph_mode == 50)
+		deemph_mode = FM_RX_EMPHASIS_FILTER_50_USEC;
+	else
+		deemph_mode = FM_RX_EMPHASIS_FILTER_75_USEC;
+
+	ret = fm_rx_set_deemphasis_mode(fmdev, deemph_mode);
+	if (ret < 0) {
+		fmerr("Failed to set De-emphasis Mode\n");
+		return ret;
+	}
+
+	return size;
+}
+
+static ssize_t show_fmrx_af(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct fmdev *fmdev = dev_get_drvdata(dev);
+
+	return sprintf(buf, "%d\n", fmdev->rx.af_mode);
+}
+
+static ssize_t store_fmrx_af(struct device *dev,
+		struct device_attribute *attr, char *buf, size_t size)
+{
+	int ret;
+	unsigned long af_mode;
+	struct fmdev *fmdev = dev_get_drvdata(dev);
+
+	if (kstrtoul(buf, 0, &af_mode))
+		return -EINVAL;
+
+	if (af_mode < 0 || af_mode > 1)
+		return -EINVAL;
+
+	ret = fm_rx_set_af_switch(fmdev, af_mode);
+	if (ret < 0) {
+		fmerr("Failed to set AF Switch\n");
+		return ret;
+	}
+
+	return size;
+}
+
+static ssize_t show_fmrx_band(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct fmdev *fmdev = dev_get_drvdata(dev);
+
+	return sprintf(buf, "%d\n", fmdev->rx.region.fm_band);
+}
+
+static ssize_t store_fmrx_band(struct device *dev,
+		struct device_attribute *attr, char *buf, size_t size)
+{
+	int ret;
+	unsigned long fm_band;
+	struct fmdev *fmdev = dev_get_drvdata(dev);
+
+	if (kstrtoul(buf, 0, &fm_band))
+		return -EINVAL;
+
+	if (fm_band < FM_BAND_EUROPE_US || fm_band > FM_BAND_RUSSIAN)
+		return -EINVAL;
+
+	ret = fm_rx_set_region(fmdev, fm_band);
+	if (ret < 0) {
+		fmerr("Failed to set FM Band\n");
+		return ret;
+	}
+
+	return size;
+}
+
+static ssize_t show_fmrx_rssi_lvl(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct fmdev *fmdev = dev_get_drvdata(dev);
+
+	return sprintf(buf, "%d\n", fmdev->rx.rssi_threshold);
+}
+static ssize_t store_fmrx_rssi_lvl(struct device *dev,
+		struct device_attribute *attr, char *buf, size_t size)
+{
+	int ret;
+	unsigned long rssi_lvl;
+	struct fmdev *fmdev = dev_get_drvdata(dev);
+
+	if (kstrtoul(buf, 0, &rssi_lvl))
+		return -EINVAL;
+
+	ret = fm_rx_set_rssi_threshold(fmdev, rssi_lvl);
+	if (ret < 0) {
+		fmerr("Failed to set RSSI level\n");
+		return ret;
+	}
+
+	return size;
+}
+
+/* structures specific for sysfs entries */
+static struct kobj_attribute v4l2_fmtx_rds_af =
+__ATTR(fmtx_rds_af, 0666, (void *)show_fmtx_af, (void *)store_fmtx_af);
+
+static struct kobj_attribute v4l2_fm_deemph_mode =
+__ATTR(fmrx_deemph_mode, 0666, (void *)show_fmrx_deemphasis, (void *)store_fmrx_deemphasis);
+
+static struct kobj_attribute v4l2_fm_rds_af =
+__ATTR(fmrx_rds_af, 0666, (void *)show_fmrx_af, (void *)store_fmrx_af);
+
+static struct kobj_attribute v4l2_fm_band =
+__ATTR(fmrx_band, 0666, (void *)show_fmrx_band, (void *)store_fmrx_band);
+
+static struct kobj_attribute v4l2_fm_rssi_lvl =
+__ATTR(fmrx_rssi_lvl, 0666, (void *) show_fmrx_rssi_lvl, (void *)store_fmrx_rssi_lvl);
+
+static struct attribute *v4l2_fm_attrs[] = {
+	&v4l2_fmtx_rds_af.attr,
+	&v4l2_fm_deemph_mode.attr,
+	&v4l2_fm_rds_af.attr,
+	&v4l2_fm_band.attr,
+	&v4l2_fm_rssi_lvl.attr,
+	NULL,
+};
+static struct attribute_group v4l2_fm_attr_grp = {
+	.attrs = v4l2_fm_attrs,
+};
+
 /*
  * Handle open request for "/dev/radioX" device.
  * Start with FM RX mode as default.
@@ -137,6 +316,12 @@ static int fm_v4l2_fops_open(struct file *file)
 	}
 	radio_disconnected = 1;
 
+	/* Register sysfs entries */
+	ret = sysfs_create_group(&fmdev->radio_dev->dev.kobj, &v4l2_fm_attr_grp);
+	if (ret) {
+		pr_err("failed to create sysfs entries");
+		return ret;
+	}
 	return ret;
 }
 
@@ -156,6 +341,8 @@ static int fm_v4l2_fops_release(struct file *file)
 		fmerr("Unable to turn off the chip\n");
 		return ret;
 	}
+
+	sysfs_remove_group(&fmdev->radio_dev->dev.kobj, &v4l2_fm_attr_grp);
 
 	ret = fmc_release(fmdev);
 	if (ret < 0) {
@@ -543,7 +730,7 @@ int fm_v4l2_init_video_device(struct fmdev *fmdev, int radio_nr)
 			FM_RX_VOLUME_MAX, 1, FM_RX_VOLUME_MAX);
 
 	v4l2_ctrl_new_std(&fmdev->ctrl_handler, &fm_ctrl_ops,
-			V4L2_CID_AUDIO_MUTE, 0, 1, 1, 1);
+			V4L2_CID_AUDIO_MUTE, 0, 1, 1, 0);
 
 	v4l2_ctrl_new_std_menu(&fmdev->ctrl_handler, &fm_ctrl_ops,
 			V4L2_CID_TUNE_PREEMPHASIS, V4L2_PREEMPHASIS_75_uS,

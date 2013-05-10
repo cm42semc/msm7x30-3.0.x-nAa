@@ -58,6 +58,13 @@ static struct region_info region_configs[] = {
 	 .top_freq = 90000,	/* 90 MHz */
 	 .fm_band = 1,
 	 },
+	/* Russian (OIRT) band */
+	{
+	 .chanl_space = FM_CHANNEL_SPACING_200KHZ * FM_FREQ_MUL,
+	 .bot_freq = 65800,	/* 65.8 MHz */
+	 .top_freq = 74000,	/* 74 MHz */
+	 .fm_band = 2,
+	 },
 };
 
 /* Band selection */
@@ -655,7 +662,7 @@ static void fm_rx_update_af_cache(struct fmdev *fmdev, u8 af)
 	if (reg_idx == FM_BAND_JAPAN && af > FM_RDS_MAX_AF_JAPAN)
 		return;
 
-	freq = fmdev->rx.region.bot_freq + (af * 100);
+	freq = fmdev->rx.region.bot_freq + (af * FM_KHZ);
 	if (freq == fmdev->rx.freq) {
 		fmdbg("Current freq(%d) is matching with received AF(%d)\n",
 				fmdev->rx.freq, freq);
@@ -1573,7 +1580,7 @@ u32 fmc_prepare(struct fmdev *fmdev)
 	fmdev->rx.rds.flag = FM_RDS_DISABLE;
 	fmdev->rx.freq = FM_UNDEFINED_FREQ;
 	fmdev->rx.rds_mode = FM_RDS_SYSTEM_RDS;
-	fmdev->rx.af_mode = FM_RX_RDS_AF_SWITCH_MODE_OFF;
+	fmdev->rx.af_mode = FM_RX_RDS_AF_SWITCH_MODE_ON;
 	fmdev->irq_info.retry = 0;
 
 	fm_rx_reset_rds_cache(fmdev);

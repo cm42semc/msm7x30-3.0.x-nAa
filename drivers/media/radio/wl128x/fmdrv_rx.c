@@ -275,6 +275,10 @@ again:
 			/* Calculate frequency index to write */
 			next_frq = (fmdev->rx.freq -
 					fmdev->rx.region.bot_freq) / FM_FREQ_MUL;
+
+			/* If no valid chanel then report default frequency */
+			wrap_around = 0;
+
 			goto again;
 		}
 	} else {
@@ -289,6 +293,7 @@ again:
 				((u32)curr_frq * FM_FREQ_MUL));
 
 	}
+
 	/* Reset RDS cache and current station pointers */
 	fm_rx_reset_rds_cache(fmdev);
 	fm_rx_reset_station_info(fmdev);
@@ -309,7 +314,6 @@ u32 fm_rx_set_volume(struct fmdev *fmdev, u16 vol_to_set)
 			   FM_RX_VOLUME_MIN, FM_RX_VOLUME_MAX);
 		return -EINVAL;
 	}
-	vol_to_set *= FM_RX_VOLUME_GAIN_STEP;
 
 	payload = vol_to_set;
 	ret = fmc_send_cmd(fmdev, VOLUME_SET, REG_WR, &payload,
@@ -332,7 +336,7 @@ u32 fm_rx_get_volume(struct fmdev *fmdev, u16 *curr_vol)
 		return -ENOMEM;
 	}
 
-	*curr_vol = fmdev->rx.volume / FM_RX_VOLUME_GAIN_STEP;
+	*curr_vol = fmdev->rx.volume;
 
 	return 0;
 }
@@ -363,7 +367,8 @@ u32 fm_rx_set_region(struct fmdev *fmdev, u8 region_to_set)
 	u32 ret;
 
 	if (region_to_set != FM_BAND_EUROPE_US &&
-	    region_to_set != FM_BAND_JAPAN) {
+	    region_to_set != FM_BAND_JAPAN &&
+	    region_to_set != FM_BAND_RUSSIAN) {
 		fmerr("Invalid band\n");
 		return -EINVAL;
 	}
@@ -549,7 +554,7 @@ u32 fm_rx_set_rssi_threshold(struct fmdev *fmdev, short rssi_lvl_toset)
 		fmerr("Invalid RSSI threshold level\n");
 		return -EINVAL;
 	}
-	payload = (u16)rssi_lvl_toset;
+	payload = (u16) rssi_lvl_toset;
 	ret = fmc_send_cmd(fmdev, SEARCH_LVL_SET, REG_WR, &payload,
 			sizeof(payload), NULL, NULL);
 	if (ret < 0)
