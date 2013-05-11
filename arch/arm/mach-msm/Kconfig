@@ -2313,4 +2313,10 @@ config MSM_CACHE_DUMP_ON_PANIC
 	  want to dump the L1 and L2 caches on panic before any flush occurs.
 	  If unsure, say N
 
+config MOGAMI_BT_WILINK
+	bool "Mogami TI Wilink support"
+	depends on BT_WILINK && TI_ST && ST_HCI && UHID
+	help
+	  Mogami TI Wilink support
+
 endif
